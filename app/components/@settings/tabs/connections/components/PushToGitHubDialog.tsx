@@ -136,15 +136,24 @@ export function PushToGitHubDialog({ isOpen, onClose, onPush }: PushToGitHubDial
       const octokit = new Octokit({ auth: connection.token });
 
       try {
-        await octokit.repos.get({
+        const { data: existingRepo } = await octokit.repos.get({
           owner: connection.user.login,
           repo: repoName,
         });
 
         // If we get here, the repo exists
-        const confirmOverwrite = window.confirm(
-          `Repository "${repoName}" already exists. Do you want to update it? This will add or modify files in the repository.`,
-        );
+        let confirmMessage = `Repository "${repoName}" already exists. Do you want to update it? This will add or modify files in the repository.`;
+
+        // Add visibility change warning if needed
+        if (existingRepo.private !== isPrivate) {
+          const visibilityChange = isPrivate
+            ? 'This will also change the repository from public to private.'
+            : 'This will also change the repository from private to public.';
+
+          confirmMessage += `\n\n${visibilityChange}`;
+        }
+
+        const confirmOverwrite = window.confirm(confirmMessage);
 
         if (!confirmOverwrite) {
           setIsLoading(false);
@@ -422,7 +431,7 @@ export function PushToGitHubDialog({ isOpen, onClose, onPush }: PushToGitHubDial
                           >
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
-                                <div className="i-ph:git-repository w-4 h-4 text-purple-500" />
+                                <div className="i-ph:git-branch w-4 h-4 text-purple-500" />
                                 <span className="text-sm font-medium text-gray-900 dark:text-white group-hover:text-purple-500">
                                   {repo.name}
                                 </span>
